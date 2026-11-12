@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "127.0.0.1:${QUERYLENS_DB_PORT:-55432}:5432"
+    environment:
+      POSTGRES_DB: querylens
+      POSTGRES_USER: querylens_admin
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Copy .env.example to .env and set the passwords}
+      QUERYLENS_DB_PASSWORD: ${QUERYLENS_DB_PASSWORD:?Set QUERYLENS_DB_PASSWORD in .env}
+    volumes:
+      - querylens_pgdata:/var/lib/postgresql/data
+      - ./backend/database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U querylens_admin -d querylens"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      QUERYLENS_DB_HOST: db
+      QUERYLENS_DB_PORT: 5432
+      QUERYLENS_DB_NAME: querylens
+      QUERYLENS_DB_USER: querylens_readonly
+      QUERYLENS_DB_PASSWORD: ${QUERYLENS_DB_PASSWORD:?Set QUERYLENS_DB_PASSWORD in .env}
+      QUERYLENS_STATEMENT_TIMEOUT_MS: 10000
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${QUERYLENS_WEB_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  querylens_pgdata:

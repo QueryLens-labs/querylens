@@ -1,0 +1,38 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependencies, builds, caches, tests, logs
+node_modules/
+dist/
+.vite/
+coverage/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.py[cod]
+*.log
+.coverage
+coverage.xml
+htmlcov/
+
+# Local editor and machine files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+
+# Agent instructions and workflows are not part of the public repository
+AGENTS.md
+CLAUDE.md
+.github/
+**/skills/
